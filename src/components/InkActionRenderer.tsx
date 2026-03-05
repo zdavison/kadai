@@ -1,5 +1,7 @@
 import { Box, Text } from "ink";
+import { join } from "node:path";
 import React, { useEffect, useState } from "react";
+import { ensureKadaiResolvable } from "../core/shared-deps.ts";
 import type { Action, InkActionProps } from "../types.ts";
 
 type LoadState =
@@ -55,6 +57,9 @@ export function InkActionRenderer({
 
     (async () => {
       try {
+        // Ensure "kadai/ink", "kadai/react", etc. resolve from the project
+        ensureKadaiResolvable(join(cwd, "node_modules"));
+
         const mod = await import(action.filePath);
         if (cancelled) return;
 

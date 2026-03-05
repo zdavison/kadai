@@ -1,6 +1,7 @@
 import { mkdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import type { NpmPluginSource } from "../../types.ts";
+import { compareSemver, parseSemver } from "../semver.ts";
 import type { FetchResult } from "./types.ts";
 
 const REGISTRY = "https://registry.npmjs.org";
@@ -12,34 +13,6 @@ interface NpmVersionData {
 interface NpmPackageMetadata {
   "dist-tags": Record<string, string>;
   versions: Record<string, NpmVersionData>;
-}
-
-/**
- * Parse a semver string into [major, minor, patch] numbers.
- * Returns null if not a valid semver.
- */
-function parseSemver(v: string): [number, number, number] | null {
-  // Strip leading "v" and any prerelease/build metadata for comparison
-  const withoutPrerelease = v.replace(/^v/, "").split("-")[0] ?? "";
-  const clean = withoutPrerelease.split("+")[0] ?? "";
-  const parts = clean.split(".");
-  if (parts.length !== 3) return null;
-  const nums = parts.map(Number);
-  if (nums.some((n) => Number.isNaN(n))) return null;
-  return nums as [number, number, number];
-}
-
-/** Compare two semver arrays. Returns >0 if a > b, <0 if a < b, 0 if equal. */
-function compareSemver(
-  a: [number, number, number],
-  b: [number, number, number],
-): number {
-  for (let i = 0; i < 3; i++) {
-    const av = a[i] as number;
-    const bv = b[i] as number;
-    if (av !== bv) return av - bv;
-  }
-  return 0;
 }
 
 /**

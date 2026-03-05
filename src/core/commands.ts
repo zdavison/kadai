@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { loadConfig } from "./config.ts";
 import { enterFullscreen } from "./fullscreen.ts";
 import { loadActions } from "./loader.ts";
+import { ensureKadaiResolvable } from "./shared-deps.ts";
 import {
   loadCachedPlugins,
   loadPathPlugin,
@@ -88,6 +89,9 @@ export async function handleRun(options: RunOptions): Promise<never> {
   }
 
   if (action.runtime === "ink") {
+    // Ensure "kadai/ink", "kadai/react", etc. resolve from the project
+    const cleanupKadai = ensureKadaiResolvable(join(cwd, "node_modules"));
+
     const mod = await import(action.filePath);
     if (typeof mod.default !== "function") {
       process.stderr.write(
@@ -112,6 +116,7 @@ export async function handleRun(options: RunOptions): Promise<never> {
     );
     await instance.waitUntilExit();
     cleanupFullscreen?.();
+    cleanupKadai?.();
     process.exit(0);
   }
 

@@ -30,6 +30,8 @@ const external = [
   "@modelcontextprotocol/sdk/server/stdio.js",
 ];
 
+// ── Main CLI bundle ──────────────────────────────────────────────────
+
 const result = await Bun.build({
   entrypoints: ["./src/cli.tsx"],
   outdir: "./dist",
@@ -51,4 +53,57 @@ if (!result.success) {
 const outPath = "./dist/cli.js";
 await $`chmod +x ${outPath}`;
 
-console.log("Built dist/cli.js");
+// ── Re-export barrels for ink actions ────────────────────────────────
+// These let TSX actions `import { Box } from "kadai/ink"` instead of
+// `import { Box } from "ink"`, avoiding the need for a Bun plugin to
+// redirect module resolution. Since these files live in kadai's package,
+// their bare imports (e.g. "ink") resolve from kadai's own node_modules.
+
+const exportsResult = await Bun.build({
+  entrypoints: [
+    "./src/exports/ink.ts",
+    "./src/exports/ui.ts",
+    "./src/exports/react.ts",
+    "./src/exports/jsx-runtime.ts",
+    "./src/exports/jsx-dev-runtime.ts",
+  ],
+  outdir: "./dist/exports",
+  target: "bun",
+  minify: false,
+  format: "esm",
+  // Keep the actual packages external — they resolve at runtime from
+  // kadai's node_modules, ensuring a single instance of each.
+  external: [
+    ...SHARED_DEPS,
+    "react/jsx-runtime",
+    "react/jsx-dev-runtime",
+  ],
+});
+
+if (!exportsResult.success) {
+  console.error("Exports build failed:");
+  for (const log of exportsResult.logs) {
+    console.error(log);
+  }
+  process.exit(1);
+}
+
+// ── Types ────────────────────────────────────────────────────────────
+
+const typesResult = await Bun.build({
+  entrypoints: ["./src/types.ts"],
+  outdir: "./dist",
+  target: "bun",
+  minify: false,
+  format: "esm",
+});
+
+if (!typesResult.success) {
+  console.error("Types build failed:");
+  for (const log of typesResult.logs) {
+    console.error(log);
+  }
+  process.exit(1);
+}
+
+console.log("Built dist/cli.js + exports");

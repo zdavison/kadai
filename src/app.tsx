@@ -8,6 +8,7 @@ import { useActions } from "./hooks/useActions.ts";
 import { useKeyboard } from "./hooks/useKeyboard.ts";
 import { useNavigation } from "./hooks/useNavigation.ts";
 import { useSearch } from "./hooks/useSearch.ts";
+import { useUpdateCheck } from "./hooks/useUpdateCheck.ts";
 import type { Action, MenuItem, PluginSyncStatus } from "./types.ts";
 
 function MenuList({
@@ -74,6 +75,7 @@ export function App({ kadaiDir, onRunAction }: AppProps) {
   };
 
   const search = useSearch();
+  const updateInfo = useUpdateCheck();
   const nav = useNavigation({ onExit: exit, onNavigate: search.resetSearch });
   const { actions, actionsRef, config, loading, pluginSyncStatuses } =
     useActions({
@@ -121,6 +123,12 @@ export function App({ kadaiDir, onRunAction }: AppProps) {
     return (
       <Box flexDirection="column">
         <Breadcrumbs path={menuPath} />
+        {updateInfo && (
+          <Text dimColor>
+            Update available: {updateInfo.current} → {updateInfo.latest} — run
+            bunx kadai@latest
+          </Text>
+        )}
         {search.searchActive && (
           <Box marginBottom={1}>
             <Text>/ {search.searchQuery}</Text>
