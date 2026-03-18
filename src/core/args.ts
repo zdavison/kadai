@@ -1,6 +1,7 @@
 export type ParsedArgs =
   | { type: "interactive" }
   | { type: "version" }
+  | { type: "rerun" }
   | { type: "list"; all: boolean }
   | { type: "run"; actionId: string }
   | { type: "mcp" }
@@ -16,6 +17,10 @@ export function parseArgs(argv: string[]): ParsedArgs {
 
   if (command === "--version" || command === "-v") {
     return { type: "version" };
+  }
+
+  if (command === "--rerun" || command === "-r") {
+    return { type: "rerun" };
   }
 
   switch (command) {
@@ -47,7 +52,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     default:
       return {
         type: "error",
-        message: `Unknown command: ${command}. Available commands: list, run, sync, mcp, --version`,
+        message: `Unknown command: ${command}. Available commands: list, run, sync, mcp, --version, --rerun`,
       };
   }
 }
