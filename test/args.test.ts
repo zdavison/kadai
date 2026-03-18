@@ -63,6 +63,14 @@ describe("parseArgs", () => {
     expect(parseArgs(["sync"])).toEqual({ type: "sync" });
   });
 
+  test("--rerun → rerun", () => {
+    expect(parseArgs(["--rerun"])).toEqual({ type: "rerun" });
+  });
+
+  test("-r → rerun", () => {
+    expect(parseArgs(["-r"])).toEqual({ type: "rerun" });
+  });
+
   test("unknown command → error", () => {
     const result = parseArgs(["foobar"]);
     expect(result.type).toBe("error");

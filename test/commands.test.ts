@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fixturePath, spawnCLI } from "./harness.ts";
@@ -155,5 +155,95 @@ describe("kadai run <action-id>", () => {
     const { exitCode, output } = await session.waitForExit();
     expect(exitCode).toBe(0);
     expect(output).toContain("Database reset complete.");
+  });
+
+  test("saves last action to .kadai/.last-action", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "kadai-rerun-"));
+    const kadaiDir = join(tmpDir, ".kadai");
+    const actionsDir = join(kadaiDir, "actions");
+    mkdirSync(actionsDir, { recursive: true });
+    writeFileSync(join(actionsDir, "hello.sh"), "#!/usr/bin/env bash\necho 'Hello from kadai!'");
+    writeFileSync(join(kadaiDir, "config.ts"), "export default {}");
+
+    try {
+      const session = spawnCLI({ cwd: tmpDir, args: ["run", "hello"] });
+      const { exitCode } = await session.waitForExit();
+      expect(exitCode).toBe(0);
+
+      const lastAction = readFileSync(join(kadaiDir, ".last-action"), "utf8").trim();
+      expect(lastAction).toBe("hello");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ─── --rerun / -r ─────────────────────────────────────────────────
+
+describe("kadai --rerun", () => {
+  test("reruns the last action", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "kadai-rerun-"));
+    const kadaiDir = join(tmpDir, ".kadai");
+    const actionsDir = join(kadaiDir, "actions");
+    mkdirSync(actionsDir, { recursive: true });
+    writeFileSync(join(actionsDir, "hello.sh"), "#!/usr/bin/env bash\necho 'Hello from kadai!'");
+    writeFileSync(join(kadaiDir, "config.ts"), "export default {}");
+    writeFileSync(join(kadaiDir, ".last-action"), "hello");
+
+    try {
+      const session = spawnCLI({ cwd: tmpDir, args: ["--rerun"] });
+      const { exitCode, output } = await session.waitForExit();
+      expect(exitCode).toBe(0);
+      expect(output).toContain("Hello from kadai!");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test("-r reruns the last action", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "kadai-rerun-"));
+    const kadaiDir = join(tmpDir, ".kadai");
+    const actionsDir = join(kadaiDir, "actions");
+    mkdirSync(actionsDir, { recursive: true });
+    writeFileSync(join(actionsDir, "hello.sh"), "#!/usr/bin/env bash\necho 'Hello from kadai!'");
+    writeFileSync(join(kadaiDir, "config.ts"), "export default {}");
+    writeFileSync(join(kadaiDir, ".last-action"), "hello");
+
+    try {
+      const session = spawnCLI({ cwd: tmpDir, args: ["-r"] });
+      const { exitCode, output } = await session.waitForExit();
+      expect(exitCode).toBe(0);
+      expect(output).toContain("Hello from kadai!");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test("exits 1 with helpful message when no last action saved", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "kadai-rerun-"));
+    const kadaiDir = join(tmpDir, ".kadai");
+    mkdirSync(join(kadaiDir, "actions"), { recursive: true });
+    writeFileSync(join(kadaiDir, "config.ts"), "export default {}");
+
+    try {
+      const session = spawnCLI({ cwd: tmpDir, args: ["--rerun"] });
+      const { exitCode, stderr } = await session.waitForExit();
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain("No last action");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test("exits 1 with error when no .kadai dir", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "kadai-no-dir-"));
+    try {
+      const session = spawnCLI({ cwd: tmpDir, args: ["--rerun"] });
+      const { exitCode, stderr } = await session.waitForExit();
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain(".kadai");
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });

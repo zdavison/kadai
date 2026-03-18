@@ -6,7 +6,7 @@ import { registerSharedDeps } from "./core/shared-deps.ts";
 registerSharedDeps();
 
 import { parseArgs } from "./core/args.ts";
-import { handleList, handleRun } from "./core/commands.ts";
+import { handleList, handleRun, handleRerun } from "./core/commands.ts";
 import { findZcliDir } from "./core/loader.ts";
 
 const cwd = process.cwd();
@@ -36,7 +36,7 @@ if (parsed.type === "mcp") {
   await new Promise(() => {});
 }
 
-if (parsed.type === "list" || parsed.type === "run" || parsed.type === "sync") {
+if (parsed.type === "list" || parsed.type === "run" || parsed.type === "sync" || parsed.type === "rerun") {
   const kadaiDir = findZcliDir(cwd);
   if (!kadaiDir) {
     process.stderr.write(
@@ -54,6 +54,8 @@ if (parsed.type === "list" || parsed.type === "run" || parsed.type === "sync") {
     await handleList({ kadaiDir, all: parsed.all });
   } else if (parsed.type === "run") {
     await handleRun({ kadaiDir, actionId: parsed.actionId, cwd });
+  } else if (parsed.type === "rerun") {
+    await handleRerun({ kadaiDir, cwd });
   } else {
     const { handleSync } = await import("./core/commands.ts");
     await handleSync({ kadaiDir });
@@ -69,6 +71,7 @@ const { resolveCommand } = await import("./core/runner.ts");
 const { loadConfig } = await import("./core/config.ts");
 
 import type { Action } from "./types.ts";
+import { saveLastAction } from "./core/last-action.ts";
 
 const kadaiDir = findZcliDir(cwd);
 if (!kadaiDir) {
@@ -221,6 +224,7 @@ if (!selectedAction) process.exit(0);
 
 // Run the selected action, replacing the kadai process
 const action: Action = selectedAction;
+await saveLastAction(kadaiDir, action.id);
 const config = await loadConfig(kadaiDir);
 const cmd = resolveCommand(action);
 const env: Record<string, string> = {

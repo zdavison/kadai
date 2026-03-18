@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { loadConfig } from "./config.ts";
 import { enterFullscreen } from "./fullscreen.ts";
 import { loadActions } from "./loader.ts";
+import { saveLastAction, loadLastAction } from "./last-action.ts";
 import { ensureKadaiResolvable } from "./shared-deps.ts";
 import {
   loadCachedPlugins,
@@ -88,6 +89,8 @@ export async function handleRun(options: RunOptions): Promise<never> {
     process.exit(1);
   }
 
+  await saveLastAction(kadaiDir, actionId);
+
   if (action.runtime === "ink") {
     // Ensure "kadai/ink", "kadai/react", etc. resolve from the project
     const cleanupKadai = ensureKadaiResolvable(join(cwd, "node_modules"));
@@ -145,6 +148,23 @@ export async function handleRun(options: RunOptions): Promise<never> {
 
   const exitCode = await proc.exited;
   process.exit(exitCode);
+}
+
+interface RerunOptions {
+  kadaiDir: string;
+  cwd: string;
+}
+
+export async function handleRerun(options: RerunOptions): Promise<never> {
+  const { kadaiDir, cwd } = options;
+  const actionId = await loadLastAction(kadaiDir);
+  if (!actionId) {
+    process.stderr.write(
+      "No last action found. Run an action first before using --rerun.\n",
+    );
+    process.exit(1);
+  }
+  return handleRun({ kadaiDir, actionId, cwd });
 }
 
 interface SyncOptions {
