@@ -1,0 +1,23 @@
+src/core/init-wizard.ts
+  077d7aa40f3b0ff4 51-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "5dc344751ac8f345e892e7e4ea7e8144c4563740",
+  "prompts": {
+    "077d7aa40f3b0ff4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "798ac76e-75fe-4867-92e8-d772827ce8ba",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Zachary Davison <zac.developer@gmail.com>",
+      "messages": [],
+      "total_additions": 19,
+      "total_deletions": 0,
+      "accepted_lines": 19,
+      "overriden_lines": 0
+    }
+  }
+}
