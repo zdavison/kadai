@@ -1,6 +1,6 @@
 {
   "name": "kadai",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "bin": {
     "kadai": "./dist/cli.js"
