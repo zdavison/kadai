@@ -133,3 +133,57 @@ describe("buildMenuItems — new action indicators", () => {
     expect(items.every((i) => !i.isNew)).toBe(true);
   });
 });
+
+describe("buildMenuItems — index ordering", () => {
+  test("actions with index sort numerically, not alphabetically", () => {
+    // Index order (20, 3000, 9876) = Charlie, Alpha, Bravo
+    // Alphabetical order would be Alpha, Bravo, Charlie
+    const actions = [
+      makeAction({ id: "charlie", meta: { name: "Charlie", index: 20 } }),
+      makeAction({ id: "alpha", meta: { name: "Alpha", index: 3000 } }),
+      makeAction({ id: "bravo", meta: { name: "Bravo", index: 9876 } }),
+    ];
+    const items = buildMenuItems(actions, []);
+    expect(items.map((i) => i.label)).toEqual(["Charlie", "Alpha", "Bravo"]);
+  });
+
+  test("indexed actions sort before unindexed actions regardless of label", () => {
+    // "Alpha" would come first alphabetically, but it has no index
+    // "Zebra" has index 1, so it should come first
+    const actions = [
+      makeAction({ id: "alpha", meta: { name: "Alpha" } }),
+      makeAction({ id: "zebra", meta: { name: "Zebra", index: 1 } }),
+    ];
+    const items = buildMenuItems(actions, []);
+    expect(items.map((i) => i.label)).toEqual(["Zebra", "Alpha"]);
+  });
+
+  test("unindexed actions maintain alphabetical order among themselves", () => {
+    const actions = [
+      makeAction({ id: "charlie", meta: { name: "Charlie" } }),
+      makeAction({ id: "alpha", meta: { name: "Alpha" } }),
+      makeAction({ id: "bravo", meta: { name: "Bravo" } }),
+    ];
+    const items = buildMenuItems(actions, []);
+    expect(items.map((i) => i.label)).toEqual(["Alpha", "Bravo", "Charlie"]);
+  });
+
+  test("collision: same index sorts by label for consistency", () => {
+    const actions = [
+      makeAction({ id: "bravo", meta: { name: "Bravo", index: 10 } }),
+      makeAction({ id: "alpha", meta: { name: "Alpha", index: 10 } }),
+    ];
+    const items = buildMenuItems(actions, []);
+    expect(items.map((i) => i.label)).toEqual(["Alpha", "Bravo"]);
+  });
+
+  test("index ordering applies within category views", () => {
+    // "Beta" would come first alphabetically, but "Alpha" has a lower index
+    const actions = [
+      makeAction({ id: "db/beta", meta: { name: "Beta", index: 100 }, category: ["db"] }),
+      makeAction({ id: "db/alpha", meta: { name: "Alpha", index: 200 }, category: ["db"] }),
+    ];
+    const items = buildMenuItems(actions, ["db"]);
+    expect(items.map((i) => i.label)).toEqual(["Beta", "Alpha"]);
+  });
+});

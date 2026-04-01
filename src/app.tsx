@@ -248,6 +248,7 @@ export function buildMenuItems(actions: Action[], path: string[]): MenuItem[] {
           description: action.meta.description,
           value: action.id,
           isNew: newActionIds.has(action.id),
+          index: action.meta.index,
         });
       }
     }
@@ -264,6 +265,7 @@ export function buildMenuItems(actions: Action[], path: string[]): MenuItem[] {
           description: action.meta.description,
           value: action.id,
           isNew: newActionIds.has(action.id),
+          index: action.meta.index,
         });
       } else if (action.category.length > path.length) {
         const subCategory = action.category[path.length] as string;
@@ -291,6 +293,12 @@ export function buildMenuItems(actions: Action[], path: string[]): MenuItem[] {
         if (a.value === "~") return -1;
         if (b.value === "~") return 1;
       }
+    }
+    // Actions: indexed sort before unindexed, then by index value, then by label
+    if (a.type === "action" && b.type === "action") {
+      const aIdx = a.index ?? Infinity;
+      const bIdx = b.index ?? Infinity;
+      if (aIdx !== bIdx) return aIdx - bIdx;
     }
     return a.label.localeCompare(b.label);
   });

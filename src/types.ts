@@ -20,6 +20,13 @@ export interface ActionMeta {
    * @default false
    */
   fullscreen?: boolean;
+  /**
+   * Numeric sort key for ordering actions in menus.
+   * Actions without an index sort after indexed ones, alphabetically.
+   * Collisions are broken by label.
+   * @example 100
+   */
+  index?: number;
 }
 
 export interface Action {
@@ -72,6 +79,8 @@ export interface MenuItem {
   value: string;
   /** Whether this action was added within the past 7 days */
   isNew?: boolean;
+  /** Numeric sort key inherited from the action's metadata */
+  index?: number;
   /** Whether this category represents a plugin (renders 📦 instead of 📁) */
   isPlugin?: boolean;
 }

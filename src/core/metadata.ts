@@ -33,6 +33,11 @@ function parseMetadataFromContent(content: string): Partial<ActionMeta> {
       case "fullscreen":
         meta.fullscreen = value.trim() === "true";
         break;
+      case "index": {
+        const parsed = Number(value.trim());
+        if (!Number.isNaN(parsed)) meta.index = parsed;
+        break;
+      }
     }
   }
 
@@ -61,6 +66,7 @@ export async function extractMetadata(filePath: string): Promise<ActionMeta> {
       confirm: frontmatter.confirm ?? false,
       hidden: frontmatter.hidden ?? false,
       fullscreen: frontmatter.fullscreen ?? false,
+      index: frontmatter.index,
     };
   }
 
