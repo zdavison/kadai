@@ -24,6 +24,8 @@ function MenuList({
 }) {
   const hasAnyNew = items.some((item) => item.isNew);
   const isParallelMode = runMode.type === "parallel";
+  const queueIds =
+    runMode.type === "sequential" ? runMode.queue.map((a) => a.id) : [];
 
   return (
     <>
@@ -42,14 +44,20 @@ function MenuList({
           isParallelMode &&
           item.type === "action" &&
           (runMode as Extract<RunMode, { type: "parallel" }>).selected.has(item.value);
+        const queuePos =
+          item.type === "action" ? queueIds.indexOf(item.value) + 1 : 0;
+        const queueIndent = queuePos > 0 ? " ".repeat((queuePos - 1) * 2) : "";
+        const cursorGlyph = selected ? "❯ " : isParallelSelected ? "● " : "  ";
+        const cursorColor = selected
+          ? "cyan"
+          : isParallelSelected
+            ? "green"
+            : undefined;
         return (
           <Box key={`${i}-${item.value}`} width="100%">
-            <Text color={selected ? "cyan" : undefined}>
-              {selected ? "❯ " : "  "}
-            </Text>
-            {isParallelMode && item.type === "action" && (
-              <Text color="green">{isParallelSelected ? "● " : "  "}</Text>
-            )}
+            {queueIndent && <Text>{queueIndent}</Text>}
+            <Text color={cursorColor}>{cursorGlyph}</Text>
+            {queuePos > 0 && <Text dimColor>→ </Text>}
             {hasAnyNew && <Text>{item.isNew ? "✨ " : "   "}</Text>}
             <Text color={selected ? "cyan" : undefined}>
               {item.type === "category" ? (item.isPlugin ? "📦 " : "📁 ") : ""}
@@ -157,14 +165,9 @@ export function App({ kadaiDir, onRunAction, onRunMultiAction }: AppProps) {
           />
         )}
         {runMode.type === "sequential" && runMode.queue.length > 0 && (
-          <Box marginTop={1} flexDirection="column">
-            {runMode.queue.map((action, i) => (
-              <Box key={`q-${i}-${action.id}`}>
-                <Text>{" ".repeat((i + 1) * 2)}</Text>
-                <Text dimColor>{"→ "}</Text>
-                <Text>{action.id}</Text>
-              </Box>
-            ))}
+          <Box marginTop={1}>
+            <Text dimColor>{"→ "}</Text>
+            <Text>{runMode.queue.map((a) => a.id).join(" → ")}</Text>
           </Box>
         )}
         {runMode.type === "parallel" && runMode.selected.size > 0 && (

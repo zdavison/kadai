@@ -142,33 +142,68 @@ describe("multi-run composition", () => {
     cli?.kill();
   });
 
-  test("right arrow queues an action and shows preview bar", async () => {
+  test("right arrow queues focused action and indents it inline", async () => {
     cli = spawnCLI({ cwd: fixturePath("basic-repo") });
     await cli.waitForText("Hello World");
     // Move down past the database category to the first action
     cli.press(Keys.DOWN);
     await Bun.sleep(100);
     cli.press(Keys.RIGHT);
-    await cli.waitForText("kadai run");
+    await cli.waitForText("→ Cleanup");
   });
 
-  test("escape clears the queue and hides preview bar", async () => {
+  test("right arrow on the same item twice does not duplicate it", async () => {
     cli = spawnCLI({ cwd: fixturePath("basic-repo") });
     await cli.waitForText("Hello World");
-    // Move down past the database category to the first action
     cli.press(Keys.DOWN);
     await Bun.sleep(100);
     cli.press(Keys.RIGHT);
-    await cli.waitForText("kadai run");
-    // Note the output length before pressing Escape
+    await cli.waitForText("→ Cleanup");
+    cli.press(Keys.RIGHT);
+    await Bun.sleep(150);
+    const out = cli.getStrippedOutput();
+    const lastFrame = out.split("kadai\n").at(-1) ?? "";
+    const matches = lastFrame.match(/→ Cleanup/g) ?? [];
+    expect(matches.length).toBe(1);
+  });
+
+  test("escape clears the queue and removes the inline indent", async () => {
+    cli = spawnCLI({ cwd: fixturePath("basic-repo") });
+    await cli.waitForText("Hello World");
+    cli.press(Keys.DOWN);
+    await Bun.sleep(100);
+    cli.press(Keys.RIGHT);
+    await cli.waitForText("→ Cleanup");
     const lenBefore = cli.getStrippedOutput().length;
     cli.press(Keys.ESCAPE);
     await Bun.sleep(300);
-    // Only check output produced AFTER pressing Escape
     const newOut = cli.getStrippedOutput().slice(lenBefore);
-    const lines = newOut.split("\n");
-    const hasPreview = lines.some((l) => /kadai run \S/.test(l));
-    expect(hasPreview).toBe(false);
+    const lastFrame = newOut.split("kadai\n").at(-1) ?? "";
+    expect(lastFrame).not.toContain("→ Cleanup");
+  });
+
+  test("right arrow on a category enters it so items can be queued cross-directory", async () => {
+    cli = spawnCLI({ cwd: fixturePath("basic-repo") });
+    await cli.waitForText("Hello World");
+    // Queue the first top-level action
+    cli.press(Keys.DOWN);
+    await Bun.sleep(100);
+    cli.press(Keys.RIGHT);
+    await cli.waitForText("→ Cleanup");
+    // Navigate back up to root, then into the database category via right arrow
+    cli.press(Keys.UP);
+    await Bun.sleep(50);
+    cli.press(Keys.RIGHT);
+    await cli.waitForText("Reset Database");
+    // Queue one of the database actions
+    cli.press(Keys.DOWN);
+    await Bun.sleep(50);
+    cli.press(Keys.RIGHT);
+    // Bottom preview should now show both queued ids across directories
+    await cli.waitForText("database/migrate");
+    const out = cli.getStrippedOutput();
+    const lastFrame = out.split("kadai > database\n").at(-1) ?? "";
+    expect(lastFrame).toMatch(/cleanup.*→.*database\/migrate/);
   });
 
   test("space selects for parallel and shows + separator in preview", async () => {
@@ -178,7 +213,7 @@ describe("multi-run composition", () => {
     cli.press(Keys.DOWN);
     await Bun.sleep(100);
     cli.press(" ");
-    await cli.waitForText("kadai run");
+    await cli.waitForText("∥");
     cli.press(Keys.DOWN);
     cli.press(" ");
     await cli.waitForText("+");

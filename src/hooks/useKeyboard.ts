@@ -194,18 +194,25 @@ export function useKeyboard({
         return;
       }
 
-      // Right / l — queue focused action for sequential run
+      // Right / l — enter category, or queue focused action for sequential run
       if (key.rightArrow || input === "l") {
-        if (runModeRef.current.type === "parallel") return;
-        const action = getFocusedAction(
+        const item = getFocusedItem(
           screen, actionsRef, searchQueryRef, selectedIndexRef,
           getMenuItems, computeFiltered,
         );
+        if (item?.type === "category") {
+          pushScreen({ type: "menu", path: [...screen.path, item.value] });
+          return;
+        }
+        if (runModeRef.current.type === "parallel") return;
+        if (item?.type !== "action") return;
+        const action = actionsRef.current.find((a) => a.id === item.value);
         if (!action) return;
         const prevQueue =
           runModeRef.current.type === "sequential"
             ? runModeRef.current.queue
             : [];
+        if (prevQueue.some((a) => a.id === action.id)) return;
         const newMode: RunMode = {
           type: "sequential",
           queue: [...prevQueue, action],
@@ -215,25 +222,30 @@ export function useKeyboard({
         return;
       }
 
-      // Left / h — dequeue last occurrence of focused action from sequential queue
+      // Left / h — dequeue focused action from sequential queue, else navigate up
       if (key.leftArrow || input === "h") {
-        if (runModeRef.current.type !== "sequential") return;
-        const action = getFocusedAction(
-          screen, actionsRef, searchQueryRef, selectedIndexRef,
-          getMenuItems, computeFiltered,
-        );
-        if (!action) return;
-        const queue = runModeRef.current.queue;
-        const lastIdx = [...queue].reverse().findIndex((a) => a.id === action.id);
-        if (lastIdx === -1) return;
-        const actualIdx = queue.length - 1 - lastIdx;
-        const newQueue = queue.filter((_, i) => i !== actualIdx);
-        const newMode: RunMode =
-          newQueue.length === 0
-            ? { type: "normal" }
-            : { type: "sequential", queue: newQueue };
-        runModeRef.current = newMode;
-        setRunMode(newMode);
+        if (runModeRef.current.type === "sequential") {
+          const action = getFocusedAction(
+            screen, actionsRef, searchQueryRef, selectedIndexRef,
+            getMenuItems, computeFiltered,
+          );
+          if (action) {
+            const queue = runModeRef.current.queue;
+            const newQueue = queue.filter((a) => a.id !== action.id);
+            if (newQueue.length !== queue.length) {
+              const newMode: RunMode =
+                newQueue.length === 0
+                  ? { type: "normal" }
+                  : { type: "sequential", queue: newQueue };
+              runModeRef.current = newMode;
+              setRunMode(newMode);
+              return;
+            }
+          }
+        }
+        if (screen.path.length > 0) {
+          popScreen();
+        }
         return;
       }
 
@@ -267,6 +279,19 @@ export function useKeyboard({
   );
 }
 
+function getFocusedItem(
+  screen: Screen & { type: "menu" },
+  actionsRef: React.MutableRefObject<Action[]>,
+  searchQueryRef: React.MutableRefObject<string>,
+  selectedIndexRef: React.MutableRefObject<number>,
+  getMenuItems: (actions: Action[], path: string[]) => MenuItem[],
+  computeFiltered: (items: MenuItem[], query: string) => MenuItem[],
+): MenuItem | null {
+  const allItems = getMenuItems(actionsRef.current, screen.path);
+  const filtered = computeFiltered(allItems, searchQueryRef.current);
+  return filtered[selectedIndexRef.current] ?? null;
+}
+
 function getFocusedAction(
   screen: Screen & { type: "menu" },
   actionsRef: React.MutableRefObject<Action[]>,
@@ -275,9 +300,10 @@ function getFocusedAction(
   getMenuItems: (actions: Action[], path: string[]) => MenuItem[],
   computeFiltered: (items: MenuItem[], query: string) => MenuItem[],
 ): Action | null {
-  const allItems = getMenuItems(actionsRef.current, screen.path);
-  const filtered = computeFiltered(allItems, searchQueryRef.current);
-  const item = filtered[selectedIndexRef.current];
+  const item = getFocusedItem(
+    screen, actionsRef, searchQueryRef, selectedIndexRef,
+    getMenuItems, computeFiltered,
+  );
   if (!item || item.type !== "action") return null;
   return actionsRef.current.find((a) => a.id === item.value) ?? null;
 }
