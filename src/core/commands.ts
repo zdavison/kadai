@@ -252,6 +252,27 @@ export async function handleRunParallel(
     status: "running",
   }));
 
+  const collectStream = async (stream: ReadableStream<Uint8Array>, target: string[]) => {
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n");
+        buffer = parts.pop() ?? "";
+        target.push(...parts);
+      }
+    } catch (e) {
+      if (e instanceof Error && e.name !== "AbortError") {
+        process.stderr.write(`[warn] output collection error: ${e.message}\n`);
+      }
+    }
+    if (buffer) target.push(buffer);
+  };
+
   const procs = selected.map((action, i) => {
     const cmd = resolveCommand(action);
     const proc = Bun.spawn(cmd, {
@@ -261,31 +282,9 @@ export async function handleRunParallel(
       stdin: null,
       env,
     });
-
-    const collectStream = async (stream: ReadableStream<Uint8Array>, target: string[]) => {
-      const reader = stream.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const parts = buffer.split("\n");
-          buffer = parts.pop() ?? "";
-          target.push(...parts);
-        }
-      } catch (e) {
-        if (e instanceof Error && e.name !== "AbortError") {
-          process.stderr.write(`[warn] output collection error: ${e.message}\n`);
-        }
-      }
-      if (buffer) target.push(buffer);
-    };
-
-    collectStream(proc.stdout, runners[i]!.lines);
-    collectStream(proc.stderr, runners[i]!.stderrLines);
-
+    const runner = runners[i]!; // i is always in bounds: procs and runners are built from the same selected array
+    collectStream(proc.stdout, runner.lines);
+    collectStream(proc.stderr, runner.stderrLines);
     return proc;
   });
 

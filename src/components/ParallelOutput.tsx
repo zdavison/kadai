@@ -13,6 +13,7 @@ export function ParallelOutput({ runners, onDone }: ParallelOutputProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [, setTick] = useState(0);
   const frameRef = useRef(0);
+  const calledDone = useRef(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -22,8 +23,11 @@ export function ParallelOutput({ runners, onDone }: ParallelOutputProps) {
     return () => clearInterval(interval);
   }, []);
 
+  // No dep array: runners is mutated in place (React can't detect field changes),
+  // so we rely on the 100ms spinner interval's re-renders to poll for completion.
   useEffect(() => {
-    if (runners.length > 0 && runners.every((r) => r.status !== "running")) {
+    if (!calledDone.current && runners.length > 0 && runners.every((r) => r.status !== "running")) {
+      calledDone.current = true;
       onDone?.();
     }
   });
@@ -71,10 +75,10 @@ export function ParallelOutput({ runners, onDone }: ParallelOutputProps) {
       </Box>
       <Box flexDirection="column">
         {active.lines.slice(-40).map((line, i) => (
-          <Text key={`out-${activeTab}-${i}`}>{line}</Text>
+          <Text key={`out-${i}`}>{line}</Text>
         ))}
         {active.stderrLines.slice(-10).map((line, i) => (
-          <Text key={`err-${activeTab}-${i}`} color="red">{line}</Text>
+          <Text key={`err-${i}`} color="red">{line}</Text>
         ))}
         {active.status === "running" && active.lines.length === 0 && active.stderrLines.length === 0 && (
           <Text dimColor>waiting for output...</Text>
