@@ -70,6 +70,8 @@ export function useKeyboard({
       // ── Search mode ──────────────────────────────────────────────
       if (searchActiveRef.current) {
         if (key.escape) {
+          // Intentionally closes search only; run-mode queue/selection is preserved.
+          // A second Escape (in normal mode) then clears run mode.
           resetSearch();
           return;
         }
