@@ -6,6 +6,7 @@ export type ParsedArgs =
   | { type: "run"; actionId: string }
   | { type: "mcp" }
   | { type: "sync" }
+  | { type: "install" }
   | { type: "error"; message: string };
 
 export function parseArgs(argv: string[]): ParsedArgs {
@@ -49,11 +50,14 @@ export function parseArgs(argv: string[]): ParsedArgs {
     case "sync":
       return { type: "sync" };
 
+    case "install":
+      return { type: "install" };
+
     default:
       if (command.startsWith("-")) {
         return {
           type: "error",
-          message: `Unknown flag: ${command}. Available commands: list, run, sync, mcp, --version, --rerun`,
+          message: `Unknown flag: ${command}. Available commands: list, run, sync, mcp, install, --version, --rerun`,
         };
       }
       return { type: "run", actionId: command };

@@ -71,6 +71,10 @@ describe("parseArgs", () => {
     expect(parseArgs(["-r"])).toEqual({ type: "rerun" });
   });
 
+  test("install → install", () => {
+    expect(parseArgs(["install"])).toEqual({ type: "install" });
+  });
+
   test("unknown command → run with actionId", () => {
     expect(parseArgs(["foobar"])).toEqual({ type: "run", actionId: "foobar" });
   });
