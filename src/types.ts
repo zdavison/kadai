@@ -188,6 +188,8 @@ export interface ActionOrigin {
 /** Per-plugin sync progress */
 export type PluginSyncStatus = "syncing" | "done" | "error";
 
+// ─── Parallel run types ──────────────────────────────────────────
+
 /** State of one process in a parallel run — `lines` is mutated in place as output streams in */
 export interface ParallelRunner {
   action: Action;
