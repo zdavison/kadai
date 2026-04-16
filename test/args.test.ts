@@ -71,11 +71,15 @@ describe("parseArgs", () => {
     expect(parseArgs(["-r"])).toEqual({ type: "rerun" });
   });
 
-  test("unknown command → error", () => {
-    const result = parseArgs(["foobar"]);
+  test("unknown command → run with actionId", () => {
+    expect(parseArgs(["foobar"])).toEqual({ type: "run", actionId: "foobar" });
+  });
+
+  test("unknown flag → error", () => {
+    const result = parseArgs(["--foobar"]);
     expect(result.type).toBe("error");
     if (result.type === "error") {
-      expect(result.message).toContain("foobar");
+      expect(result.message).toContain("--foobar");
     }
   });
 });

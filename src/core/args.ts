@@ -50,9 +50,12 @@ export function parseArgs(argv: string[]): ParsedArgs {
       return { type: "sync" };
 
     default:
-      return {
-        type: "error",
-        message: `Unknown command: ${command}. Available commands: list, run, sync, mcp, --version, --rerun`,
-      };
+      if (command.startsWith("-")) {
+        return {
+          type: "error",
+          message: `Unknown flag: ${command}. Available commands: list, run, sync, mcp, --version, --rerun`,
+        };
+      }
+      return { type: "run", actionId: command };
   }
 }
