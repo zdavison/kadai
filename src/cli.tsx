@@ -23,6 +23,11 @@ if (parsed.type === "version") {
   process.exit(0);
 }
 
+if (parsed.type === "install") {
+  const { handleInstall } = await import("./core/commands.ts");
+  await handleInstall();
+}
+
 if (parsed.type === "mcp") {
   const { ensureMcpConfig, startMcpServer } = await import("./core/mcp.ts");
   const kadaiDir = findZcliDir(cwd);
