@@ -15,12 +15,15 @@ function MenuList({
   items,
   selectedIndex,
   pluginSyncStatuses,
+  runMode,
 }: {
   items: MenuItem[];
   selectedIndex: number;
   pluginSyncStatuses?: Map<string, PluginSyncStatus>;
+  runMode: RunMode;
 }) {
   const hasAnyNew = items.some((item) => item.isNew);
+  const isParallelMode = runMode.type === "parallel";
 
   return (
     <>
@@ -35,11 +38,18 @@ function MenuList({
           );
         }
         const selected = i === selectedIndex;
+        const isParallelSelected =
+          isParallelMode &&
+          item.type === "action" &&
+          (runMode as Extract<RunMode, { type: "parallel" }>).selected.has(item.value);
         return (
           <Box key={`${i}-${item.value}`} width="100%">
             <Text color={selected ? "cyan" : undefined}>
               {selected ? "❯ " : "  "}
             </Text>
+            {isParallelMode && item.type === "action" && (
+              <Text color="green">{isParallelSelected ? "● " : "  "}</Text>
+            )}
             {hasAnyNew && <Text>{item.isNew ? "✨ " : "   "}</Text>}
             <Text color={selected ? "cyan" : undefined}>
               {item.type === "category" ? (item.isPlugin ? "📦 " : "📁 ") : ""}
@@ -143,16 +153,24 @@ export function App({ kadaiDir, onRunAction, onRunMultiAction }: AppProps) {
             items={filteredItems}
             selectedIndex={search.selectedIndex}
             pluginSyncStatuses={pluginSyncStatuses}
+            runMode={runMode}
           />
         )}
-        {runMode.type !== "normal" && (
+        {runMode.type === "sequential" && runMode.queue.length > 0 && (
+          <Box marginTop={1} flexDirection="column">
+            {runMode.queue.map((action, i) => (
+              <Box key={`q-${i}-${action.id}`}>
+                <Text>{" ".repeat((i + 1) * 2)}</Text>
+                <Text dimColor>{"→ "}</Text>
+                <Text>{action.id}</Text>
+              </Box>
+            ))}
+          </Box>
+        )}
+        {runMode.type === "parallel" && runMode.selected.size > 0 && (
           <Box marginTop={1}>
-            <Text dimColor>{"→ "}</Text>
-            <Text>
-              {runMode.type === "sequential"
-                ? `kadai run ${runMode.queue.map((a) => a.id).join(" ")}`
-                : `kadai run ${[...runMode.selected].join(" + ")}`}
-            </Text>
+            <Text dimColor>{"∥ "}</Text>
+            <Text>{[...runMode.selected].join(" + ")}</Text>
           </Box>
         )}
         <StatusBar />
