@@ -187,3 +187,16 @@ export interface ActionOrigin {
 
 /** Per-plugin sync progress */
 export type PluginSyncStatus = "syncing" | "done" | "error";
+
+/** State of one process in a parallel run — `lines` is mutated in place as output streams in */
+export interface ParallelRunner {
+  action: Action;
+  lines: string[];
+  status: "running" | "done" | "failed";
+}
+
+/** Multi-run composition mode tracked in the TUI */
+export type RunMode =
+  | { type: "normal" }
+  | { type: "sequential"; queue: Action[] }
+  | { type: "parallel"; selected: Set<string> };
